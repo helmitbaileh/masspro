@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ar">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تسجيل الدخول</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <style>
+    #login-container {
+      width: 300px;
+      margin: auto;
+      padding: 20px;
+      text-align: center;
+      font-family: "Tajawal", sans-serif;
+
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    #loginForm input {
+      width: 100%;
+      font-family: "Tajawal", sans-serif;
+
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    #loginForm button {
+      font-family: "Tajawal", sans-serif;
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #loginForm button:hover {
+      font-family: "Tajawal", sans-serif;
+
+      background-color: #0056b3;
+    }
+  </style>
+  <body>
+    <div id="login-container">
+      <h1>تسجيل الدخول</h1>
+      <form id="loginForm">
+        <input type="text" id="username" placeholder="اسم المستخدم" required />
+        <input
+          type="password"
+          id="password"
+          placeholder="كلمة المرور"
+          required
+        />
+        <div>
+          <input type="checkbox" id="rememberMe" />
+          <label for="rememberMe">احفظني</label>
+        </div>
+        <button type="submit">تسجيل الدخول</button>
+      </form>
+      <div id="error-message" style="color: red; display: none">
+        اسم المستخدم أو كلمة المرور غير صحيحة
+      </div>
+    </div>
+    <script>
+      const validUsers = {
+        Marah: "password",
+        Yasser: "password",
+        Yassmen: "password",
+        Tala: "password",
+      };
+
+      // التحقق من تسجيل الدخول المسبق
+      window.onload = () => {
+        const savedUser =
+          localStorage.getItem("currentUser") ||
+          sessionStorage.getItem("currentUser");
+        if (savedUser) {
+          window.location.href = `${savedUser}.html`;
+        }
+      };
+
+      document.getElementById("loginForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        const rememberMe = document.getElementById("rememberMe").checked;
+
+        if (validUsers[username] && validUsers[username] === password) {
+          if (rememberMe) {
+            localStorage.setItem("currentUser", username); // حفظ المستخدم في التخزين المحلي
+          } else {
+            sessionStorage.setItem("currentUser", username); // حفظ المستخدم في التخزين المؤقت
+          }
+          window.location.href = `${username}.html`; // التوجيه إلى صفحة المستخدم
+        } else {
+          document.getElementById("error-message").style.display = "block"; // عرض رسالة الخطأ إذا كانت بيانات الدخول غير صحيحة
+        }
+      });
+    </script>
+  </body>
+</html>

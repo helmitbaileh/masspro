@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>صفحة المحادثة</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        onSnapshot,
+        query,
+        orderBy,
+      } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+      import {
+        getMessaging,
+        onMessage,
+        getToken,
+      } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
+
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyD4mDJE1_ugDxibuUUMV4UbTOX0pR7Twoo",
+        authDomain: "masseges-5892f.firebaseapp.com",
+        projectId: "masseges-5892f",
+        storageBucket: "masseges-5892f.appspot.com",
+        messagingSenderId: "1009540401808",
+        appId: "1:1009540401808:web:0e1d394ff0efd0534c6615",
+        measurementId: "G-FBLFN8BEG6",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const messaging = getMessaging(app);
+
+      // طلب إذن للإشعارات
+      async function requestNotificationPermission() {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          console.log("تم السماح بالإشعارات");
+          const token = await getToken(messaging, {
+            vapidKey: "Yeu6uFOzZ36e90tfOycWLiAQHyUn_oVbJWMVQRSJwLk",
+          });
+          console.log("FCM Token:", token);
+        } else {
+          console.log("تم رفض الإذن للإشعارات");
+        }
+      }
+
+      requestNotificationPermission();
+
+      // جلب اسم المستخدم الحالي
+      const currentUser =
+        localStorage.getItem("currentUser") ||
+        sessionStorage.getItem("currentUser");
+
+      if (!currentUser) {
+        window.location.href = "index.html"; // إعادة التوجيه إذا لم يكن المستخدم مسجلاً
+      }
+
+      // DOM Elements
+      const messagesContainer = document.getElementById("messages");
+      const messageInput = document.getElementById("messageInput");
+      const sendButton = document.getElementById("sendButton");
+
+      // Realtime Listener for Messages
+      const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+      onSnapshot(q, (snapshot) => {
+        messagesContainer.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const message = doc.data();
+          const messageElement = document.createElement("div");
+
+          if (message.sender === currentUser) {
+            messageElement.classList.add("message", "current-user");
+          } else {
+            messageElement.classList.add("message", "other-user");
+
+            // عرض إشعار عند استقبال رسالة جديدة
+            if (Notification.permission === "granted") {
+              new Notification("رسالة جديدة", {
+                body: `${message.sender}: ${message.text}`,
+                icon: "7124045_logout_icon.svg",
+              });
+            }
+          }
+
+          const timestamp = new Date(
+            message.timestamp?.seconds * 1000
+          ).toLocaleTimeString();
+
+          messageElement.innerHTML = `
+            <div class="sender-name">${message.sender}</div>
+            <p class="message-content">${message.text}</p>
+            <div class="message-timestamp">${timestamp}</div>
+          `;
+
+          messagesContainer.appendChild(messageElement);
+        });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      });
+
+      // Send Text Message
+      async function sendMessage() {
+        const text = messageInput.value.trim();
+        if (text === "") return;
+        try {
+          await addDoc(collection(db, "messages"), {
+            text,
+            sender: currentUser,
+            timestamp: new Date(),
+          });
+          messageInput.value = "";
+        } catch (e) {
+          console.error("Error sending message: ", e);
+        }
+      }
+
+      sendButton.addEventListener("click", sendMessage);
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+
+      // تسجيل الخروج
+      document.getElementById("logoutButton").addEventListener("click", () => {
+        localStorage.removeItem("currentUser");
+        sessionStorage.removeItem("currentUser");
+        window.location.href = "index.html";
+      });
+
+      // إعداد خدمة العمل لتلقي الإشعارات في الخلفية
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/firebase-messaging-sw.js")
+          .then((registration) => {
+            console.log("Service Worker تم تسجيله بنجاح:", registration);
+            messaging.useServiceWorker(registration);
+          })
+          .catch((err) => console.error("فشل تسجيل Service Worker:", err));
+      }
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/firebase-messaging-sw.js")
+          .then((registration) => {
+            console.log("Service Worker تم تسجيله بنجاح:", registration);
+          })
+          .catch((err) => console.error("فشل تسجيل Service Worker:", err));
+      }
+    </script>
+  </head>
+  <body>
+    <div id="chat-container">
+      <div id="messages"></div>
+      <div id="input-container">
+        <input type="text" id="messageInput" placeholder="اكتب رسالتك هنا..." />
+        <button id="sendButton">إرسال</button>
+      </div>
+      <div id="logout-button-container">
+        <button id="logoutButton" title="تسجيل الخروج">
+          <img src="7124045_logout_icon.svg" alt="خروج" />
+        </button>
+      </div>
+    </div>
+  </body>
+</html>
